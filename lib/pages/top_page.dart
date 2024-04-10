@@ -1,4 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:udemy_chat_app/firestore/room_firestore.dart';
+import 'package:udemy_chat_app/models/talk_room.dart';
 import 'package:udemy_chat_app/models/user.dart';
 import 'package:udemy_chat_app/pages/setting_profile_page.dart';
 import 'package:udemy_chat_app/pages/talk_room_page.dart';
@@ -11,20 +14,6 @@ class TopPage extends StatefulWidget {
 }
 
 class _TopPageState extends State<TopPage> {
-  List<User> userList = [
-    User(
-        name: '田中',
-        uid: 'abc',
-        imagePath:
-            'https://play-lh.googleusercontent.com/3ImQkiRynf23t3kZ3PMtmGNA0OaozdlzjkH0e2OTV_wmHxUdXglyGpnWuxqmofmMAw',
-        lastMessage: 'こんにちは'),
-    User(
-        name: '佐藤',
-        uid: 'bca',
-        imagePath:
-            'https://play-lh.googleusercontent.com/3ImQkiRynf23t3kZ3PMtmGNA0OaozdlzjkH0e2OTV_wmHxUdXglyGpnWuxqmofmMAw',
-        lastMessage: 'Thank you'),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -43,46 +32,76 @@ class _TopPageState extends State<TopPage> {
               icon: const Icon(Icons.settings))
         ],
       ),
-      body: ListView.builder(
-          itemCount: userList.length,
-          itemBuilder: (context, index) {
-            return InkWell(
-              onTap: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                            TalkRoomPage(userList[index].name)));
-              },
-              child: SizedBox(
-                height: 70,
-                child: Row(children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: CircleAvatar(
-                        radius: 30,
-                        backgroundImage: userList[index].imagePath == null
-                            ? null
-                            : NetworkImage(userList[index].imagePath!)),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        userList[index].name,
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        userList[index].lastMessage,
-                        style: const TextStyle(color: Colors.grey),
-                      )
-                    ],
-                  )
-                ]),
-              ),
-            );
+      body: StreamBuilder<QuerySnapshot>(
+          stream: RoomFirestore.joinedRoomSnapshot,
+          builder: (context, streamSnapshot) {
+            if (streamSnapshot.hasData) {
+              return FutureBuilder<List<TalkRoom>?>(
+                  future: RoomFirestore.fetchJoinRooms(streamSnapshot.data!),
+                  builder: (context, futureSnapshot) {
+                    List<TalkRoom> talkRooms = futureSnapshot.data!;
+                    if(futureSnapshot.connectionState == ConnectionState.waiting){
+                      return Center(child: const CircularProgressIndicator());
+                    } else {
+                      if (futureSnapshot.hasData) {
+                        return ListView.builder(
+                            itemCount: talkRooms.length,
+                            itemBuilder: (context, index) {
+                              return InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => TalkRoomPage(
+                                              talkRooms[index].talkUser.name)));
+                                },
+                                child: SizedBox(
+                                  height: 70,
+                                  child: Row(children: [
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8.0),
+                                      child: CircleAvatar(
+                                          radius: 30,
+                                          backgroundImage: talkRooms[index]
+                                              .talkUser
+                                              .imagePath ==
+                                              null
+                                              ? null
+                                              : NetworkImage(talkRooms[index]
+                                              .talkUser
+                                              .imagePath!)),
+                                    ),
+                                    Column(
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          talkRooms[index].talkUser.name,
+                                          style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                        Text(
+                                          talkRooms[index].lastMessage ?? '',
+                                          style:
+                                          const TextStyle(color: Colors.grey),
+                                        )
+                                      ],
+                                    )
+                                  ]),
+                                ),
+                              );
+                            });
+                      } else {
+                        return Center(child: const Text('トークの取得に失敗しました'));
+                      }
+                    }
+                  });
+            } else {
+              return Center(child: const CircularProgressIndicator());
+            }
           }),
     );
   }
