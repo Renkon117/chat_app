@@ -53,7 +53,7 @@ class _TopPageState extends State<TopPage> {
                                       context,
                                       MaterialPageRoute(
                                           builder: (context) => TalkRoomPage(
-                                              talkRooms[index].talkUser.name)));
+                                              talkRooms[index])));
                                 },
                                 child: SizedBox(
                                   height: 70,

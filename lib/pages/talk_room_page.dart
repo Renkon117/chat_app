@@ -1,124 +1,122 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:udemy_chat_app/firestore/room_firestore.dart';
 import 'package:udemy_chat_app/models/message.dart';
 import 'package:intl/intl.dart' as intl;
+import 'package:udemy_chat_app/models/talk_room.dart';
+import 'package:udemy_chat_app/utils/shared_prefs.dart';
 
 class TalkRoomPage extends StatefulWidget {
-  final String name;
+  final TalkRoom talkRoom;
 
-  const TalkRoomPage(this.name, {Key? key}) : super(key: key);
+  const TalkRoomPage(this.talkRoom, {Key? key}) : super(key: key);
 
   @override
   State<TalkRoomPage> createState() => _TalkRoomPageState();
 }
 
 class _TalkRoomPageState extends State<TalkRoomPage> {
-  List<Message> messageList = [
-    Message(message: 'あいう', isMe: true, sendTime: DateTime(2024, 4, 10, 12, 0)),
-    Message(
-        message: 'かきく', isMe: false, sendTime: DateTime(2024, 4, 10, 14, 12)),
-    Message(
-        message:
-            'sfdiawjepogihjsaoigjhasoidfgjaweoifjhawoiefjaweouithriutghoiufghjosadifjsoadifjawsoeiuf',
-        isMe: false,
-        sendTime: DateTime(2024, 4, 10, 15, 12)),
-    Message(message: 'あいう', isMe: true, sendTime: DateTime(2024, 4, 10, 12, 0)),
-    Message(
-        message: 'かきく', isMe: false, sendTime: DateTime(2024, 4, 10, 14, 12)),
-    Message(
-        message:
-            'sfdiawjepogihjsaoigjhasoidfgjaweoifjhawoiefjaweouithriutghoiufghjosadifjsoadifjawsoeiuf',
-        isMe: false,
-        sendTime: DateTime(2024, 4, 10, 15, 12)),
-    Message(message: 'あいう', isMe: true, sendTime: DateTime(2024, 4, 10, 12, 0)),
-    Message(
-        message: 'かきく', isMe: false, sendTime: DateTime(2024, 4, 10, 14, 12)),
-    Message(
-        message:
-            'sfdiawjepogihjsaoigjhasoidfgjaweoifjhawoiefjaweouithriutghoiufghjosadifjsoadifjawsoeiuf',
-        isMe: false,
-        sendTime: DateTime(2024, 4, 10, 15, 12)),
-    Message(message: 'あいう', isMe: true, sendTime: DateTime(2024, 4, 10, 12, 0)),
-    Message(
-        message: 'かきく', isMe: false, sendTime: DateTime(2024, 4, 10, 14, 12)),
-    Message(
-        message:
-            'sfdiawjepogihjsaoigjhasoidfgjaweoifjhawoiefjaweouithriutghoiufghjosadifjsoadifjawsoeiuf',
-        isMe: false,
-        sendTime: DateTime(2024, 4, 10, 15, 12)),
-  ];
+  final TextEditingController controller = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.lightBlueAccent,
       appBar: AppBar(
-        title: Text(widget.name),
+        title: Text(widget.talkRoom.talkUser.name),
       ),
       body: SafeArea(
         child: Stack(
-          alignment: Alignment.bottomCenter,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 60),
-              child: ListView.builder(
-                  physics: const RangeMaintainingScrollPhysics(),
-                  shrinkWrap: true,
-                  reverse: true,
-                  itemCount: messageList.length,
-                  itemBuilder: (context, index) {
+            StreamBuilder<QuerySnapshot>(
+                stream:
+                RoomFirestore.fetchMessageSnapshot(widget.talkRoom.roomId),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
                     return Padding(
-                      padding: EdgeInsets.only(
-                          top: 10.0,
-                          left: 10,
-                          right: 10,
-                          bottom: index == 0 ? 10 : 0),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        textDirection: messageList[index].isMe
-                            ? TextDirection.rtl
-                            : TextDirection.ltr,
-                        children: [
-                          Container(
-                            constraints: BoxConstraints(
-                                maxWidth:
-                                    MediaQuery.of(context).size.width * 0.6),
-                            decoration: BoxDecoration(
-                              color: messageList[index].isMe
-                                  ? Colors.green
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 6),
-                            child: Text(messageList[index].message),
-                          ),
-                          Text(intl.DateFormat('HH:mm')
-                              .format(messageList[index].sendTime))
-                        ],
-                      ),
+                      padding: const EdgeInsets.only(bottom: 60),
+                      child: ListView.builder(
+                          physics: const RangeMaintainingScrollPhysics(),
+                          shrinkWrap: true,
+                          reverse: true,
+                          itemCount: snapshot.data!.docs.length,
+                          itemBuilder: (context, index) {
+                            final doc = snapshot.data!.docs[index];
+                            final Map<String, dynamic> data =
+                            doc.data() as Map<String, dynamic>;
+                            Message message = Message(
+                                message: data['message'],
+                                isMe:
+                                SharedPrefs.fetchUid() == data['sender_id'],
+                                sendTime: data['send_time']);
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                  top: 10.0,
+                                  left: 10,
+                                  right: 10,
+                                  bottom: index == 0 ? 10 : 0),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                textDirection: message.isMe
+                                    ? TextDirection.rtl
+                                    : TextDirection.ltr,
+                                children: [
+                                  Container(
+                                    constraints: BoxConstraints(
+                                        maxWidth:
+                                        MediaQuery
+                                            .of(context)
+                                            .size
+                                            .width *
+                                            0.6),
+                                    decoration: BoxDecoration(
+                                      color: message.isMe
+                                          ? Colors.green
+                                          : Colors.white,
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 6),
+                                    child: Text(message.message),
+                                  ),
+                                  Text(intl.DateFormat('HH:mm')
+                                      .format(message.sendTime.toDate()))
+                                ],
+                              ),
+                            );
+                          }),
                     );
-                  }),
-            ),
+                  } else {
+                    return Center(
+                      child: Text('メッセージがありません'),
+                    );
+                  }
+                }),
             Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Container(
                   color: Colors.white,
                   height: 60,
                   child: Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Padding(
-                          padding: EdgeInsets.all(8.0),
+                          padding: const EdgeInsets.all(8.0),
                           child: TextField(
-                            decoration: InputDecoration(
+                            controller: controller,
+                            decoration: const InputDecoration(
                                 contentPadding: EdgeInsets.only(left: 10),
                                 border: OutlineInputBorder()),
                           ),
                         ),
                       ),
                       IconButton(
-                        onPressed: () {},
+                        onPressed: () async {
+                          await RoomFirestore.sendMessage(roomId: widget.talkRoom
+                              .roomId, message: controller.text);
+                          controller.clear();
+                        },
                         icon: const Icon(Icons.send),
                       )
                     ],
@@ -126,7 +124,10 @@ class _TalkRoomPageState extends State<TalkRoomPage> {
                 ),
                 Container(
                   color: Colors.white,
-                  height: MediaQuery.of(context).padding.bottom,
+                  height: MediaQuery
+                      .of(context)
+                      .padding
+                      .bottom,
                 )
               ],
             )

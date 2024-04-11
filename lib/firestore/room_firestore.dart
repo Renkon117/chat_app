@@ -8,8 +8,9 @@ class RoomFirestore {
   static final FirebaseFirestore _firebaseFirestoreInstance =
       FirebaseFirestore.instance;
   static final _roomCollection = _firebaseFirestoreInstance.collection('room');
-  static final joinedRoomSnapshot = _roomCollection.where(
-      'joined_user_ids', arrayContains: SharedPrefs.fetchUid()).snapshots();
+  static final joinedRoomSnapshot = _roomCollection
+      .where('joined_user_ids', arrayContains: SharedPrefs.fetchUid())
+      .snapshots();
 
   static Future<void> createRoom(String myUid) async {
     try {
@@ -55,6 +56,33 @@ class RoomFirestore {
     } catch (e) {
       print('参加しているルームの取得失敗 ===== $e');
       return null;
+    }
+  }
+
+  static Stream<QuerySnapshot> fetchMessageSnapshot(String roomId) {
+    return _roomCollection
+        .doc(roomId)
+        .collection('message')
+        .orderBy('send_time', descending: true)
+        .snapshots();
+  }
+
+  static Future<void> sendMessage(
+      {required String roomId, required String message}) async {
+    try {
+      final messageCollection =
+          _roomCollection.doc(roomId).collection('message');
+      await messageCollection.add({
+        'message': message,
+        'sender_id': SharedPrefs.fetchUid(),
+        'send_time': Timestamp.now(),
+      });
+
+      await _roomCollection.doc(roomId).update({
+        'last_message': message,
+      });
+    } catch (e) {
+      print('メッセージの送信失敗 ===== $e');
     }
   }
 }
