@@ -46,6 +46,15 @@ class UserFirestore {
     }
   }
 
+  static Future<void> updateUser(User newProfile) async {
+    try {
+      await _userCollection.doc(newProfile.uid).update(
+          {'name': newProfile.name, 'image_path': newProfile.imagePath});
+    } catch (e) {
+      print('ユーザー情報の更新失敗 ====== $e');
+    }
+  }
+
   static Future<User?> fetchMyProfile(String uid) async {
     try {
       final snapshot = await _userCollection.doc(uid).get();
