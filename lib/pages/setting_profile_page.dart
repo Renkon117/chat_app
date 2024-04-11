@@ -15,10 +15,10 @@ class SettingProfilePage extends StatefulWidget {
 }
 
 class _SettingProfilePageState extends State<SettingProfilePage> {
-  final TextEditingController controller = TextEditingController();
   File? image;
   String imagePath = '';
   final ImagePicker _picker = ImagePicker();
+  final TextEditingController controller = TextEditingController();
 
   Future<void> selectImage() async {
     PickedFile? pickedImage =
@@ -35,6 +35,7 @@ class _SettingProfilePageState extends State<SettingProfilePage> {
     final ref = FirebaseStorage.instance.ref(path);
     final storedImage = await ref.putFile(image!);
     imagePath = await storedImage.ref.getDownloadURL();
+    print(imagePath);
   }
 
   @override
@@ -49,13 +50,13 @@ class _SettingProfilePageState extends State<SettingProfilePage> {
           child: Column(
             children: [
               Row(
-                children: const [
-                  SizedBox(
+                children: [
+                  const SizedBox(
                     width: 150,
                     child: Text('名前'),
                   ),
                   Expanded(
-                    child: TextField(),
+                    child: TextField(controller: controller,),
                   )
                 ],
               ),
@@ -92,7 +93,7 @@ class _SettingProfilePageState extends State<SettingProfilePage> {
                         fit: BoxFit.cover,
                       )),
               const SizedBox(
-                height: 150,
+                height: 20,
               ),
               SizedBox(
                 width: 150,
